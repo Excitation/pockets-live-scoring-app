@@ -1,31 +1,56 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:pocketslivescoringapp/core/pocket_theme.dart';
+import 'package:pocketslivescoringapp/providers/login_state_provider.dart';
+import 'package:pocketslivescoringapp/providers/theme_provider.dart';
+import 'package:pocketslivescoringapp/screens/homepage/home_screen.dart';
 import 'package:pocketslivescoringapp/screens/login/login_screen.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded(() => runApp(const MyApp()), (error, stack) {
+    debugPrint('Exception Caught: $error');
+  });
 }
 
+/// The main app class.
 class MyApp extends StatelessWidget {
+  /// The constructor of the class.
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Pockets Live Scoring App',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.amber,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LoginStateProvider>(
+          create: (context) => LoginStateProvider(),
+        ),
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (context) => ThemeProvider(),
+        ),
+      ],
+      child: Consumer2(
+        builder: (
+          context,
+          LoginStateProvider loginStateProvider,
+          ThemeProvider themeProvider,
+          child,
+        ) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Pockets Live Scoring App',
+            theme: themeProvider.appTheme == AppTheme.dark
+                ? PocketTheme.darkThemeData
+                : PocketTheme.lightThemeData,
+            home: loginStateProvider.isLoggedIn
+                ? const HomeScreen()
+                : const LoginScreen(),
+          );
+        },
       ),
-      home: const LoginScreen(),
     );
   }
 }
