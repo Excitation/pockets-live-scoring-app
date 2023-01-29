@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:pocketslivescoringapp/network/api_service.dart';
-import 'package:pocketslivescoringapp/providers/login_state_provider.dart';
-import 'package:pocketslivescoringapp/utils/toast_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pocketslivescoringapp/providers/login_provider.dart';
+import 'package:pocketslivescoringapp/providers/tables_provider.dart';
 import 'package:pocketslivescoringapp/widgets/loading_button.dart';
-import 'package:provider/provider.dart';
 
 /// The login screen of the app.
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   /// The constructor of the class.
   const LoginScreen({super.key});
 
   @override
-  State<StatefulWidget> createState() => _LoginScreenState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// The key of the form.
   /// This is used to validate the form.
   final _formKey = GlobalKey<FormState>();
 
   /// The controllers for the email and password fields.
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _tableController = TextEditingController();
+  final _passcodeController = TextEditingController();
 
-  /// bool to check if the password is hidden or not.
-  bool _isPasswordHidden = true;
+  /// The dispose method of the class.
+  /// This is used to dispose [_tableController] and [_passcodeController]
+  @override
+  void dispose() {
+    _passcodeController.dispose();
+    super.dispose();
+  }
 
-  /// The current state of the login button.
-  LoadingButtonState _loginButtonState = LoadingButtonState.idle;
-
+  /// The build method of the class.
   @override
   Widget build(BuildContext context) {
+    _listenToLoginState();
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       body: Container(
@@ -38,17 +41,17 @@ class _LoginScreenState extends State<LoginScreen> {
         alignment: Alignment.center,
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
+            shrinkWrap: true,
             children: [
               _buildLogo(),
-              const SizedBox(height: 16),
-              _buildLabel(text: 'Username/Email'),
+              _buildLabel(text: 'Select Table'),
               const SizedBox(height: 8),
-              _buildEmailField(),
+              _buildTableField(),
               const SizedBox(height: 32),
-              _buildLabel(text: 'Password'),
+              _buildLabel(text: 'Passcode'),
               const SizedBox(height: 8),
-              _buildPasswordField(),
+              _buildPasscodeField(),
               SizedBox(height: MediaQuery.of(context).size.height * 0.05),
               _buildLoginButton(),
             ],
@@ -58,11 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// Builds the logo widget.
   Widget _buildLogo() => Padding(
         padding: const EdgeInsets.all(16),
         child: Image.asset(
           'assets/images/logo.png',
-          width: 200,
+          width: MediaQuery.of(context).size.width * 0.3,
           height: MediaQuery.of(context).size.height * 0.3,
         ),
       );
@@ -78,43 +82,39 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-  Widget _buildEmailField() => TextFormField(
-        controller: _emailController,
-        keyboardType: TextInputType.emailAddress,
+  Widget _buildTableField() => DropdownButtonFormField(
+        items: _dropdownItems,
         decoration: _getFieldDecoration(),
+        validator: (value) {
+          if (value == null) {
+            return 'Please select a table';
+          }
+          return null;
+        },
+        value: _dropdownItems.first.value,
         autovalidateMode: AutovalidateMode.onUserInteraction,
-        validator: _validateEmailUsername,
-        autocorrect: false,
+        onChanged: (value) => _tableController.text = value.toString(),
       );
 
-  Widget _buildPasswordField() => Semantics(
-        label: 'Password',
+  Widget _buildPasscodeField() => Semantics(
+        label: 'Passcode',
         child: TextFormField(
-          controller: _passwordController,
-          decoration: _getFieldDecoration(isPassword: true),
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          obscureText: _isPasswordHidden,
+          controller: _passcodeController,
+          decoration: _getFieldDecoration(isPasscode: true),
           autocorrect: false,
           enableSuggestions: false,
-          keyboardType: TextInputType.visiblePassword,
-          validator: _validatePassword,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          keyboardType: TextInputType.number,
+          validator: _validatePasscode,
         ),
       );
 
-  InputDecoration _getFieldDecoration({bool isPassword = false}) {
+  InputDecoration _getFieldDecoration({bool isPasscode = false}) {
     return InputDecoration(
-      suffixIcon: isPassword
-          ? IconButton(
-              icon: Icon(
-                _isPasswordHidden ? Icons.visibility : Icons.visibility_off,
-              ),
-              color: Theme.of(context).iconTheme.color,
-              onPressed: _togglePasswordVisibility,
-            )
-          : Icon(
-              Icons.person,
-              color: Theme.of(context).iconTheme.color,
-            ),
+      prefixIcon: Icon(
+        isPasscode ? Icons.pin : Icons.table_restaurant,
+        color: Theme.of(context).iconTheme.color,
+      ),
       filled: true,
       fillColor: Theme.of(context).colorScheme.secondary,
       border: OutlineInputBorder(
@@ -140,35 +140,20 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Toggles the visibility of the password.
-  void _togglePasswordVisibility() {
-    setState(() {
-      _isPasswordHidden = !_isPasswordHidden;
-    });
-  }
-
-  /// Validates the email.
-  String? _validateEmailUsername(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email/Username cannot be empty';
-    }
-    return null;
-  }
-
   /// Validates the password.
-  String? _validatePassword(String? value) {
+  String? _validatePasscode(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Password cannot be empty';
+      return 'Passcode cannot be empty';
     }
 
-    if (value.length < 6) {
-      return 'Password must be at least 8 characters long';
+    if (value.length != 6) {
+      return 'Passcode must be 6 digits';
     }
     return null;
   }
 
   Widget _buildLoginButton() => LoadingButton(
-        state: _loginButtonState,
+        state: ref.watch(loginProvider).toLoadingButtonState,
         onPressed: () {
           if (_formKey.currentState!.validate()) {
             _tryLogin();
@@ -183,34 +168,61 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
   void _tryLogin() {
-    setState(() {
-      _loginButtonState = LoadingButtonState.loading;
-    });
-
-    ApiService.instance.login(_emailController.text, _passwordController.text)
-      ..then((value) {
-        setState(() {
-          _loginButtonState = LoadingButtonState.done;
-        });
-        _handleLoginSuccess();
-      })
-      ..catchError((dynamic error) {
-        setState(() {
-          _loginButtonState = LoadingButtonState.idle;
-        });
-        _showErrorToast(error.toString());
-        return false;
-      });
+    ref.read(loginProvider.notifier).login(
+          _tableController.text,
+          _passcodeController.text,
+        );
   }
 
-  void _showErrorToast(String string) {
-    ToastUtils.showErrorToast(context, string);
+  List<DropdownMenuItem<int>> get _dropdownItems {
+    final tables = ref.watch(tablesProvider);
+    return tables.when(
+      data: (tables) {
+        return tables
+            .map(
+              (table) => DropdownMenuItem<int>(
+                value: table.id,
+                child: Text(table.name),
+              ),
+            )
+            .toList();
+      },
+      error: (error, trace) {
+        return [
+          DropdownMenuItem<int>(value: -1, child: Text(error.toString()))
+        ];
+      },
+      loading: () {
+        return [
+          const DropdownMenuItem<int>(value: -1, child: Text('Loading...'))
+        ];
+      },
+    );
   }
 
-  void _handleLoginSuccess() {
-    Future.delayed(const Duration(milliseconds: 3000), () {
-      Provider.of<LoginStateProvider>(context, listen: false)
-          .setLoginState(LoginState.loggedIn);
+  /// Listens to the login state.
+  /// This is called when the widget is mounted.
+  void _listenToLoginState() {
+    ref.listen(loginProvider, (previous, next) {
+      if (next is LoginStateSuccess) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     });
+  }
+}
+
+/// Login State to LoadingButton State mapping.
+extension LoginStateToLoadingButtonState on LoginState {
+  /// Returns the [LoadingButtonState] for the [LoginState].
+  LoadingButtonState get toLoadingButtonState {
+    if (this is LoginStateLoading) {
+      return LoadingButtonState.loading;
+    } else if (this is LoginStateError) {
+      return LoadingButtonState.idle;
+    } else if (this is LoginStateSuccess) {
+      return LoadingButtonState.done;
+    } else {
+      return LoadingButtonState.idle;
+    }
   }
 }
