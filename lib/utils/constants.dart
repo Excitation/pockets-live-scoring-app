@@ -5,13 +5,13 @@ class AppConstants {
   static const String baseUrl = 'http://localhost:3000';
 
   /// Login endpoint.
-  static const String loginEndpoint = '/login';
+  static const String loginEndpoint = '/auth/match/';
 
   /// Logout endpoint.
   static const String logoutEndpoint = '/logout';
 
   /// Tables endpoint.
-  static const String tablesEndpoint = '/tournament/tables';
+  static const String matchesEndpoint = '/matches/active';
 
   /// The key for the token in the shared preferences.
   static const String tokenKey = 'token';

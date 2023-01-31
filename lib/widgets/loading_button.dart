@@ -23,22 +23,27 @@ class LoadingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: state == LoadingButtonState.loading ? null : onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            child: state == LoadingButtonState.loading
-                ? const CircularProgressIndicator.adaptive()
-                : state == LoadingButtonState.done
-                    ? const Icon(Icons.check)
-                    : const SizedBox.shrink(),
-          ),
-          if (state == LoadingButtonState.loading ||
-              state == LoadingButtonState.done)
-            const SizedBox(width: 8),
-          child,
+          if (state == LoadingButtonState.loading)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+              ),
+            )
+          else
+            child,
         ],
       ),
     );

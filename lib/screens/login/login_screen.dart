@@ -1,29 +1,37 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pocketslivescoringapp/providers/login_provider.dart';
-import 'package:pocketslivescoringapp/providers/tables_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pocketslivescoringapp/cubits/login_cubit.dart';
+import 'package:pocketslivescoringapp/cubits/matches_cubit.dart';
+import 'package:pocketslivescoringapp/models/match.dart';
+import 'package:pocketslivescoringapp/screens/homepage/home_screen.dart';
 import 'package:pocketslivescoringapp/widgets/loading_button.dart';
 
 /// The login screen of the app.
-class LoginScreen extends ConsumerStatefulWidget {
+class LoginScreen extends StatefulWidget {
   /// The constructor of the class.
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   /// The key of the form.
   /// This is used to validate the form.
   final _formKey = GlobalKey<FormState>();
 
-  /// The controllers for the email and password fields.
-  final _tableController = TextEditingController();
-  final _passcodeController = TextEditingController();
+  /// The controller for passcode field.
+  final _passcodeController = TextEditingController(text: '123456');
+
+  /// login bloc
+  final loginCubit = LoginCubit();
+
+  /// Matches bloc
+  final matchesCubit = MatchesCubit();
 
   /// The dispose method of the class.
-  /// This is used to dispose [_tableController] and [_passcodeController]
+  /// This is used to dispose  [_passcodeController]
   @override
   void dispose() {
     _passcodeController.dispose();
@@ -33,28 +41,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// The build method of the class.
   @override
   Widget build(BuildContext context) {
-    _listenToLoginState();
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      body: Container(
-        padding: const EdgeInsets.all(32),
-        alignment: Alignment.center,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              _buildLogo(),
-              _buildLabel(text: 'Select Table'),
-              const SizedBox(height: 8),
-              _buildTableField(),
-              const SizedBox(height: 32),
-              _buildLabel(text: 'Passcode'),
-              const SizedBox(height: 8),
-              _buildPasscodeField(),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-              _buildLoginButton(),
-            ],
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider<LoginCubit>(
+            create: (context) => loginCubit,
+          ),
+          BlocProvider<MatchesCubit>(
+            create: (context) => matchesCubit..getMatches(),
+          ),
+        ],
+        child: BlocListener<LoginCubit, LoginState>(
+          listener: (context, state) {
+            if (state is LoginStateSuccess) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (context) => HomeScreen(
+                    matchInfo: matchesCubit.selectedMatch!,
+                    token: state.token,
+                  ),
+                ),
+              );
+            }
+            if (state is LoginStateError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message ?? 'Error'),
+                ),
+              );
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  _buildLogo(),
+                  _buildLabel(text: 'Select Match'),
+                  const SizedBox(height: 8),
+                  _buildMatchField(),
+                  const SizedBox(height: 32),
+                  _buildLabel(text: 'Passcode'),
+                  const SizedBox(height: 8),
+                  _buildPasscodeField(),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+                  _buildLoginButton(),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -78,28 +115,78 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           text,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onBackground,
+            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
           ),
         ),
       );
 
-  Widget _buildTableField() => DropdownButtonFormField(
-        items: _dropdownItems,
-        decoration: _getFieldDecoration(),
-        validator: (value) {
-          if (value == null) {
-            return 'Please select a table';
-          }
-          return null;
+  Widget _buildMatchField() => BlocBuilder<MatchesCubit, MatchesState>(
+        builder: (context, state) {
+          final dropdownItems = state.when<List<DropdownMenuItem<MatchInfo>>>(
+            initial: (_) => [
+              DropdownMenuItem<MatchInfo>(
+                value: MatchInfo.none(),
+                child: const Text('Loading...'),
+              )
+            ],
+            loading: (_) => [
+              DropdownMenuItem<MatchInfo>(
+                value: MatchInfo.none(),
+                child: const Text('Loading...'),
+              )
+            ],
+            error: (state) => [
+              DropdownMenuItem<MatchInfo>(
+                value: MatchInfo.none(),
+                child: Text(
+                  'Error, ${state.message}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            ],
+            loaded: (state) {
+              return state.matches.map((e) {
+                return DropdownMenuItem<MatchInfo>(
+                  value: e,
+                  child: Text(
+                    e.tournamentNameWithPlayers,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList();
+            },
+          );
+
+          return DropdownButtonFormField(
+            items: dropdownItems,
+            decoration: _getFieldDecoration(),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.background,
+              fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+              overflow: TextOverflow.ellipsis,
+            ),
+            validator: (value) {
+              if (value == null) {
+                return 'Please select a match';
+              }
+              return null;
+            },
+            itemHeight: 60,
+            value: dropdownItems.first.value,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            onChanged: (value) => matchesCubit.selectedMatch = value,
+          );
         },
-        value: _dropdownItems.first.value,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        onChanged: (value) => _tableController.text = value.toString(),
       );
 
   Widget _buildPasscodeField() => Semantics(
         label: 'Passcode',
         child: TextFormField(
           controller: _passcodeController,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.background,
+            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+          ),
           decoration: _getFieldDecoration(isPasscode: true),
           autocorrect: false,
           enableSuggestions: false,
@@ -112,10 +199,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   InputDecoration _getFieldDecoration({bool isPasscode = false}) {
     return InputDecoration(
       prefixIcon: Icon(
-        isPasscode ? Icons.pin : Icons.table_restaurant,
+        isPasscode ? CupertinoIcons.lock : CupertinoIcons.tray_full_fill,
         color: Theme.of(context).iconTheme.color,
+        size: 32,
       ),
       filled: true,
+      isDense: false,
+      prefixIconConstraints: const BoxConstraints(
+        minWidth: 54,
+        minHeight: 54,
+      ),
+      contentPadding: const EdgeInsets.all(32),
       fillColor: Theme.of(context).colorScheme.secondary,
       border: OutlineInputBorder(
         borderSide: BorderSide(
@@ -146,68 +240,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return 'Passcode cannot be empty';
     }
 
-    if (value.length != 6) {
-      return 'Passcode must be 6 digits';
-    }
     return null;
   }
 
-  Widget _buildLoginButton() => LoadingButton(
-        state: ref.watch(loginProvider).toLoadingButtonState,
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            _tryLogin();
-          }
+  Widget _buildLoginButton() => BlocBuilder<LoginCubit, LoginState>(
+        builder: (context, state) {
+          debugPrint('Login State: $state');
+          return LoadingButton(
+            state: state.toLoadingButtonState,
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                _tryLogin();
+              }
+            },
+            child: const Text('Login', style: TextStyle(fontSize: 18)),
+          );
         },
-        child: Text(
-          'Login',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSecondary,
-          ),
-        ),
       );
 
   void _tryLogin() {
-    ref.read(loginProvider.notifier).login(
-          _tableController.text,
-          _passcodeController.text,
-        );
-  }
+    debugPrint('Trying to login');
+    if (matchesCubit.selectedMatch == null) {
+      return;
+    }
 
-  List<DropdownMenuItem<int>> get _dropdownItems {
-    final tables = ref.watch(tablesProvider);
-    return tables.when(
-      data: (tables) {
-        return tables
-            .map(
-              (table) => DropdownMenuItem<int>(
-                value: table.id,
-                child: Text(table.name),
-              ),
-            )
-            .toList();
-      },
-      error: (error, trace) {
-        return [
-          DropdownMenuItem<int>(value: -1, child: Text(error.toString()))
-        ];
-      },
-      loading: () {
-        return [
-          const DropdownMenuItem<int>(value: -1, child: Text('Loading...'))
-        ];
-      },
+    if (matchesCubit.selectedMatch!.id == -1) {
+      return;
+    }
+
+    debugPrint('Trying to login');
+    loginCubit.login(
+      matchId: matchesCubit.selectedMatch!.id.toString(),
+      passcode: _passcodeController.text,
     );
-  }
-
-  /// Listens to the login state.
-  /// This is called when the widget is mounted.
-  void _listenToLoginState() {
-    ref.listen(loginProvider, (previous, next) {
-      if (next is LoginStateSuccess) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      }
-    });
   }
 }
 
