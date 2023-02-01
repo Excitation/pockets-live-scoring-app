@@ -8,6 +8,9 @@ import 'package:pocketslivescoringapp/cubits/theme_cubit.dart';
 import 'package:pocketslivescoringapp/screens/login/login_screen.dart';
 import 'package:wakelock/wakelock.dart';
 
+/// The base url of the api.
+String? baseUrl;
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runZonedGuarded(

@@ -1,10 +1,13 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pocketslivescoringapp/cubits/login_cubit.dart';
 import 'package:pocketslivescoringapp/cubits/matches_cubit.dart';
+import 'package:pocketslivescoringapp/main.dart';
 import 'package:pocketslivescoringapp/models/match.dart';
 import 'package:pocketslivescoringapp/screens/homepage/home_screen.dart';
+import 'package:pocketslivescoringapp/utils/constants.dart';
 import 'package:pocketslivescoringapp/widgets/loading_button.dart';
 
 /// The login screen of the app.
@@ -72,24 +75,39 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             }
           },
-          child: Container(
-            padding: const EdgeInsets.all(32),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  _buildLogo(),
-                  _buildLabel(text: 'Select Match'),
-                  const SizedBox(height: 8),
-                  _buildMatchField(),
-                  const SizedBox(height: 32),
-                  _buildLabel(text: 'Passcode'),
-                  const SizedBox(height: 8),
-                  _buildPasscodeField(),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-                  _buildLoginButton(),
-                ],
+          child: RefreshIndicator(
+            onRefresh: () {
+              matchesCubit.getMatches();
+              return Future.value();
+            },
+            child: Container(
+              height: MediaQuery.of(context).size.height,
+              padding: const EdgeInsets.all(32),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    children: [
+                      _buildLogo(),
+                      if (kDebugMode) ...[
+                        _buildBaseUrlField(),
+                        const SizedBox(height: 32)
+                      ],
+                      _buildLabel(text: 'Select Match'),
+                      const SizedBox(height: 8),
+                      _buildMatchField(),
+                      const SizedBox(height: 32),
+                      _buildLabel(text: 'Passcode'),
+                      const SizedBox(height: 8),
+                      _buildPasscodeField(),
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.05,
+                      ),
+                      _buildLoginButton(),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -139,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
               DropdownMenuItem<MatchInfo>(
                 value: MatchInfo.none(),
                 child: Text(
-                  'Error, ${state.message}',
+                  '${state.message}',
                   overflow: TextOverflow.ellipsis,
                 ),
               )
@@ -172,6 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
             itemHeight: 60,
+            isExpanded: true,
             value: dropdownItems.first.value,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             onChanged: (value) => matchesCubit.selectedMatch = value,
@@ -207,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
       isDense: false,
       prefixIconConstraints: const BoxConstraints(
         minWidth: 54,
-        minHeight: 54,
+        minHeight: 32,
       ),
       contentPadding: const EdgeInsets.all(32),
       fillColor: Theme.of(context).colorScheme.secondary,
@@ -253,7 +272,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 _tryLogin();
               }
             },
-            child: const Text('Login', style: TextStyle(fontSize: 18)),
+            child: Text(
+              'LOGIN',
+              style: TextStyle(
+                fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
+              ),
+            ),
           );
         },
       );
@@ -272,6 +296,58 @@ class _LoginScreenState extends State<LoginScreen> {
     loginCubit.login(
       matchId: matchesCubit.selectedMatch!.id.toString(),
       passcode: _passcodeController.text,
+    );
+  }
+
+  Widget _buildBaseUrlField() {
+    return TextFormField(
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.background,
+        fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+      ),
+      initialValue: AppConstants.baseUrl,
+      decoration: InputDecoration(
+        prefixIcon: Icon(
+          CupertinoIcons.globe,
+          color: Theme.of(context).iconTheme.color,
+          size: 32,
+        ),
+        filled: true,
+        isDense: false,
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 54,
+          minHeight: 32,
+        ),
+        contentPadding: const EdgeInsets.all(32),
+        fillColor: Theme.of(context).colorScheme.secondary,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.onSecondary,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.onSecondary,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.onSecondary,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      ),
+      autocorrect: false,
+      enableSuggestions: false,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      keyboardType: TextInputType.url,
+      onChanged: (value) {
+        baseUrl = value;
+      },
     );
   }
 }

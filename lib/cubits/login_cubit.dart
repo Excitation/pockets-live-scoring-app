@@ -29,18 +29,16 @@ class LoginCubit extends Cubit<LoginState> {
       );
 
       debugPrint('Result: ${result.body}');
-      if (result.statusCode == 200) {
-        final data = jsonDecode(result.body) as Map<String, dynamic>;
-        debugPrint('Data: $data');
-        final token = (data['body'] as Map<String, dynamic>)['token'] as String;
-        emit(LoginState.success(token: token));
-        return;
-      }
+      final data = jsonDecode(result.body) as Map<String, dynamic>;
+      debugPrint('Data: $data');
 
-      if (result.statusCode != 200) {
-        emit(LoginState.error(message: result.body));
+      if (data['success'] == false) {
+        emit(LoginState.error(message: data['message'] as String));
         return;
       }
+      final token = (data['body'] as Map<String, dynamic>)['token'] as String;
+      emit(LoginState.success(token: token));
+      return;
     } catch (e) {
       debugPrint('Error: $e');
       emit(LoginState.error(message: e.toString()));

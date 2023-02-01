@@ -13,6 +13,15 @@ class AppConstants {
   /// Tables endpoint.
   static const String matchesEndpoint = '/matches/active';
 
+  /// Start match endpoint.
+  static const String startMatchEndpoint = '/matches/start';
+
+  /// Update score endpoint.
+  static const String updateScoreEndpoint = '/matches/update_score';
+
+  /// End match endpoint.
+  static const String endMatchEndpoint = '/matches/end';
+
   /// The key for the token in the shared preferences.
   static const String tokenKey = 'token';
 

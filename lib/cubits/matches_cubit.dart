@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:pocketslivescoringapp/models/match.dart';
@@ -21,6 +22,7 @@ class MatchesCubit extends Cubit<MatchesState> {
   /// Gets the tables from the api.
   Future<void> getMatches() async {
     emit(MatchesLoading());
+    debugPrint('Getting matches');
     try {
       final response =
           await http.get(ApiUtils.getUrl(AppConstants.matchesEndpoint));

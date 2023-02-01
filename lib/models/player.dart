@@ -13,6 +13,19 @@ class Player {
     this.score = 0,
   });
 
+  /// none player
+  factory Player.none() => Player(
+        id: 0,
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        imageUrl: '',
+      );
+
+  /// Create the player model from the json string
+  factory Player.fromJson(String source) =>
+      Player.fromMap(jsonDecode(source) as Map<String, dynamic>);
+
   /// Create the player from the map/object
   factory Player.fromMap(Map<String, dynamic> map) {
     return Player(
@@ -26,18 +39,13 @@ class Player {
     );
   }
 
-  /// Create the player model from the json string
-  factory Player.fromJson(String source) =>
-      Player.fromMap(jsonDecode(source) as Map<String, dynamic>);
-
-  /// none player
-  factory Player.none() => Player(
-        id: 0,
-        firstName: '',
-        middleName: '',
-        lastName: '',
-        imageUrl: '',
-      );
+  /// get the full name of the player
+  String get fullName {
+    if (middleName != null && middleName!.isNotEmpty) {
+      return '$firstName $middleName $lastName';
+    }
+    return '$firstName $lastName';
+  }
 
   /// id of the player
   final int id;

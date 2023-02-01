@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:pocketslivescoringapp/utils/toast_utils.dart';
 
 /// counter widget to display the count value
 class Counter extends StatefulWidget {
@@ -9,6 +8,7 @@ class Counter extends StatefulWidget {
     super.key,
     required this.onValueChanged,
     this.maxCount = 7,
+    this.disabled = false,
   });
 
   /// on value change callback
@@ -18,6 +18,9 @@ class Counter extends StatefulWidget {
   /// max value for the counter
   final int maxCount;
 
+  /// if the counter is disabled
+  final bool disabled;
+
   @override
   State<Counter> createState() => _CounterState();
 }
@@ -25,6 +28,21 @@ class Counter extends StatefulWidget {
 /// State class for counter
 class _CounterState extends State<Counter> {
   int _count = 0;
+  bool _isDisabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isDisabled = widget.disabled;
+  }
+
+  @override
+  void didUpdateWidget(Counter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.disabled != widget.disabled) {
+      _isDisabled = widget.disabled;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +64,7 @@ class _CounterState extends State<Counter> {
           height: 70,
           margin: const EdgeInsets.only(left: 32),
           decoration: BoxDecoration(
-            color: Colors.green,
+            color: _isDisabled ? Colors.grey : Colors.green,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
@@ -72,7 +90,7 @@ class _CounterState extends State<Counter> {
           height: 70,
           margin: const EdgeInsets.only(right: 32),
           decoration: BoxDecoration(
-            color: Colors.red,
+            color: _isDisabled ? Colors.grey : Colors.red,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
@@ -108,28 +126,27 @@ class _CounterState extends State<Counter> {
 
   /// method to update the count by 1
   void _addCount() {
-    if (_count == widget.maxCount - 1) {
-      _count++;
-      ToastUtils.showSuccessToast(context, 'Jitis mula');
-
+    if (_isDisabled) {
       return;
-    } else if (_count < 7) {
+    }
+    if (_count < 7) {
       setState(() {
         _count++;
       });
       return widget.onValueChanged(_count);
     }
-    ToastUtils.showSuccessToast(context, 'Jitis mula');
   }
 
   /// method to update the count by -1
   void _substractCount() {
+    if (_isDisabled) {
+      return;
+    }
     if (_count > 0) {
       setState(() {
         _count--;
       });
       return widget.onValueChanged(_count);
     }
-    ToastUtils.showWarningToast(context, 'Yo bhanda kati ghatauxas');
   }
 }
