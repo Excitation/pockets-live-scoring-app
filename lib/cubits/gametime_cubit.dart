@@ -5,10 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// gametime cubit class
 class GameTimeCubit extends Cubit<int> {
   /// The constructor of the class.
-  GameTimeCubit() : super(60);
+  GameTimeCubit() : super(60 * 60);
   Timer? _timer;
-  int _remaining = 60;
-  final int _duration = 60;
+  int _remaining = 60 * 60;
+  final int _duration = 60 * 60;
 
   /// Starts the timer.
   Future<void> start() async {

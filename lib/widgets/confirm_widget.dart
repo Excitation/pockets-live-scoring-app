@@ -124,7 +124,7 @@ class ConfirmWidget extends StatelessWidget {
                       !state.player1Confirmed ||
                       !state.player2Confirmed) return;
 
-                  context.read<ConfirmCubit>().endGame();
+                  context.read<ConfirmCubit>().endGame(state.time);
                 },
                 label: const Text(
                   'Submit Score',

@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen>
                         .withOpacity(0.1),
               ),
               child: const Text(
-                'End Game',
+                'End Match',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen>
                     state is GameIdle ||
                     state is GamePaused,
                 onValueChanged: (value) {
-                  _gameScoreCubit.updateScore(id, value);
+                  _gameScoreCubit.updateScore(id, value, _gameTimeCubit.state);
                 },
               );
             },
@@ -495,6 +495,7 @@ class _HomeScreenState extends State<HomeScreen>
             _gameScoreCubit.player2Score,
             _gameScoreCubit.winnerId ?? 1,
             widget.token,
+            time: _gameTimeCubit.state,
           ),
           child: const ConfirmWidget(),
         );

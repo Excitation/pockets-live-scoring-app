@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pocketslivescoringapp/cubits/login_cubit.dart';
@@ -90,10 +89,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     children: [
                       _buildLogo(),
-                      if (kDebugMode) ...[
-                        _buildBaseUrlField(),
-                        const SizedBox(height: 32)
-                      ],
+                      // if (kDebugMode) ...[
+                      //   _buildBaseUrlField(),
+                      //   const SizedBox(height: 32)
+                      // ],
                       _buildLabel(text: 'Select Match'),
                       const SizedBox(height: 8),
                       _buildMatchField(),
@@ -345,9 +344,8 @@ class _LoginScreenState extends State<LoginScreen> {
       enableSuggestions: false,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       keyboardType: TextInputType.url,
-      onChanged: (value) {
-        baseUrl = value;
-      },
+      onChanged: (value) => baseUrl = value,
+      onFieldSubmitted: (value) => matchesCubit.getMatches(),
     );
   }
 }

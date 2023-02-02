@@ -48,7 +48,7 @@ class GameScoreCubit extends Cubit<GameScoreState> {
   }
 
   /// Update the game.
-  Future<void> updateScore(int id, int score) async {
+  Future<void> updateScore(int id, int score, int remainingTime) async {
     final newScore1 = id == 1 ? score : player1Score;
     final newScore2 = id == 2 ? score : player2Score;
 
@@ -61,6 +61,9 @@ class GameScoreCubit extends Cubit<GameScoreState> {
       body: jsonEncode({
         'player_one_score': newScore1,
         'player_two_score': newScore2,
+        'context_data': {
+          'game_time': '${remainingTime ~/ 60}:${remainingTime % 60}',
+        }
       }),
     );
 
