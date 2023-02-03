@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
+  custom_timer:
+    dependency: "direct main"
+    description:
+      name: custom_timer
+      sha256: "65af2d6a3f6f232b224ad1dd06dbab9f8473be69800a32934cbd1e6d90276348"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.3"
   fake_async:
     dependency: transitive
     description:
@@ -485,14 +493,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.11.0"
-  stop_watch_timer:
-    dependency: "direct main"
-    description:
-      name: stop_watch_timer
-      sha256: eb690e4f6d983ba12ddfbf51a5d489fdba8b64982b9651cb538650888cec2886
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0"
   stream_channel:
     dependency: transitive
     description:
@@ -525,14 +525,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.16"
-  timer_count_down:
-    dependency: "direct main"
-    description:
-      name: timer_count_down
-      sha256: d025d408c2654e497ca0bd4bde014bd7509d4c6397af4ed23a0f9b692bbcf337
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.2"
   typed_data:
     dependency: transitive
     description:

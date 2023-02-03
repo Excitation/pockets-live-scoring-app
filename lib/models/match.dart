@@ -60,7 +60,7 @@ class MatchInfo {
 
   /// get tournament name with the player names
   String get tournamentNameWithPlayers =>
-      '${tournament.name} - ${playerOne.firstName} vs ${playerTwo.firstName}';
+      '${playerOne.firstName} vs ${playerTwo.firstName} - ${tournament.name}';
 
   @override
   String toString() =>

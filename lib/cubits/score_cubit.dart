@@ -48,7 +48,7 @@ class GameScoreCubit extends Cubit<GameScoreState> {
   }
 
   /// Update the game.
-  Future<void> updateScore(int id, int score, int remainingTime) async {
+  Future<void> updateScore(int id, int score, String remainingTime) async {
     final newScore1 = id == 1 ? score : player1Score;
     final newScore2 = id == 2 ? score : player2Score;
 
@@ -62,7 +62,7 @@ class GameScoreCubit extends Cubit<GameScoreState> {
         'player_one_score': newScore1,
         'player_two_score': newScore2,
         'context_data': {
-          'game_time': '${remainingTime ~/ 60}:${remainingTime % 60}',
+          'game_time': remainingTime,
         }
       }),
     );
@@ -145,4 +145,37 @@ class GameError extends GameScoreState {
 
   /// The error message.
   final String message;
+}
+
+/// .when method for the GameScoreState
+/// This method is used to handle the different states of the game.
+extension GameScoreStateExtension on GameScoreState {
+  /// The method that handles the different states of the game.
+  T when<T>({
+    required T Function() idle,
+    required T Function() started,
+    required T Function() paused,
+    required T Function() updated,
+    required T Function() won,
+    required T Function(String message) error,
+    required T Function() ended,
+  }) {
+    if (this is GameIdle) {
+      return idle();
+    } else if (this is GameStarted) {
+      return started();
+    } else if (this is GamePaused) {
+      return paused();
+    } else if (this is GameUpdated) {
+      return updated();
+    } else if (this is GameWon) {
+      return won();
+    } else if (this is GameError) {
+      return error((this as GameError).message);
+    } else if (this is GameEnded) {
+      return ended();
+    } else {
+      throw Exception('Unknown state');
+    }
+  }
 }

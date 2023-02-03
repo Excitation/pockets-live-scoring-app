@@ -132,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
           text,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onBackground,
-            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+            fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
           ),
         ),
       );
@@ -167,6 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   value: e,
                   child: Text(
                     e.tournamentNameWithPlayers,
+                    style: Theme.of(context).textTheme.headlineSmall,
                     overflow: TextOverflow.ellipsis,
                   ),
                 );
@@ -203,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _passcodeController,
           style: TextStyle(
             color: Theme.of(context).colorScheme.background,
-            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+            fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
           ),
           decoration: _getFieldDecoration(isPasscode: true),
           autocorrect: false,

@@ -1,10 +1,9 @@
+import 'package:custom_timer/custom_timer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:pocketslivescoringapp/cubits/confirm_cubit.dart';
-import 'package:pocketslivescoringapp/cubits/gametime_cubit.dart';
-import 'package:pocketslivescoringapp/cubits/playertime_cubit.dart';
 import 'package:pocketslivescoringapp/cubits/score_cubit.dart';
 import 'package:pocketslivescoringapp/cubits/sound_cubit.dart';
 import 'package:pocketslivescoringapp/cubits/theme_cubit.dart';
@@ -36,25 +35,33 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  final _tickPlayer = AudioPlayer()
-    ..setLoopMode(LoopMode.all)
-    ..setAsset('assets/sounds/tick.mp3');
-
-  /// gameTimeBloc
-  final _gameTimeCubit = GameTimeCubit();
-
-  /// playerTimeBloc
-  final _playerTimeCubit = PlayerTimeCubit();
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  final _tickPlayer = AudioPlayer()..setAsset('assets/sounds/beep.mp3');
 
   /// game score bloc
   late GameScoreCubit _gameScoreCubit;
+
+  /// The controller for the game timer.
+  late final CustomTimerController _gameTimecontroller = CustomTimerController(
+    vsync: this,
+    begin: const Duration(minutes: 60),
+    end: Duration.zero,
+  );
+
+  /// The controller for the player timer.
+  late final CustomTimerController _playerTimecontroller =
+      CustomTimerController(
+    vsync: this,
+    begin: const Duration(seconds: 30),
+    end: Duration.zero,
+  );
 
   @override
   void initState() {
     super.initState();
     _gameScoreCubit = GameScoreCubit(widget.token, widget.matchInfo);
+    _gameTimecontroller.addListener(_onGameTimeChanged);
+    _playerTimecontroller.addListener(_onPlayerTimeChanged);
   }
 
   /// Disposes the audio players.
@@ -62,23 +69,15 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _tickPlayer.dispose();
+    _gameTimecontroller.dispose();
+    _playerTimecontroller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<GameTimeCubit>(
-          create: (_) => _gameTimeCubit,
-        ),
-        BlocProvider<PlayerTimeCubit>(
-          create: (_) => _playerTimeCubit,
-        ),
-        BlocProvider<GameScoreCubit>(
-          create: (_) => _gameScoreCubit,
-        ),
-      ],
+    return BlocProvider<GameScoreCubit>(
+      create: (_) => _gameScoreCubit,
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.background,
         body: BlocListener<GameScoreCubit, GameScoreState>(
@@ -91,21 +90,18 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             children: [
               Expanded(
-                flex: 6,
+                flex: 5,
                 child: _buildGameHeader(),
               ),
               Expanded(
-                flex: 5,
+                flex: 4,
                 child: _buildPlayerControls(),
               ),
               Expanded(
-                flex: 5,
+                flex: 6,
                 child: _buildTimer(),
               ),
-              Expanded(
-                flex: 2,
-                child: _buildFooter(),
-              ),
+              _buildFooter(),
             ],
           ),
         ),
@@ -214,9 +210,56 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       );
 
-  Future<void> _navigateToLoginScreen(BuildContext context) {
-    return Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
+  void _navigateToLoginScreen(BuildContext context) {
+    /// show confirmation dialog before navigating to login screen
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Logout',
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _handleLogout(context);
+            },
+            child: Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleLogout(BuildContext context) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
         builder: (context) => const LoginScreen(),
       ),
     );
@@ -234,7 +277,11 @@ class _HomeScreenState extends State<HomeScreen>
                     state is GameIdle ||
                     state is GamePaused,
                 onValueChanged: (value) {
-                  _gameScoreCubit.updateScore(id, value, _gameTimeCubit.state);
+                  _gameScoreCubit.updateScore(
+                    id,
+                    value,
+                    _gameTimecontroller.remaining.value.minutes,
+                  );
                 },
               );
             },
@@ -255,10 +302,9 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildTimer() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+      padding: const EdgeInsets.only(top: 12),
       color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'ACT QUICK',
@@ -267,99 +313,74 @@ class _HomeScreenState extends State<HomeScreen>
               fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
             ),
           ),
-          BlocConsumer<PlayerTimeCubit, int>(
-            listener: (context, state) {
-              final isSoundEnabled = BlocProvider.of<SoundCubit>(context).state;
-              if (_playerTimeCubit.isIdle) {
-                if (_tickPlayer.playing) _tickPlayer.stop();
-                return;
-              }
-
-              if (state == 0) {
-                if (_tickPlayer.playing) _tickPlayer.stop();
-                return _playerTimeCubit.reset();
-              }
-
-              if (!isSoundEnabled) {
-                if (_tickPlayer.playing) _tickPlayer.stop();
-              }
-
-              if (state < 10 && state > 5) {
-                _tickPlayer.setSpeed(1.5);
-              } else if (state <= 5 && state > 0) {
-                _tickPlayer.setSpeed(2);
-              } else {
-                _tickPlayer.setSpeed(1);
-              }
-
-              if (!_tickPlayer.playing) _tickPlayer.play();
-            },
-            builder: (context, state) {
-              debugPrint('Seconds: $state');
+          CustomTimer(
+            controller: _playerTimecontroller,
+            builder: (state, time) {
               return Text(
-                state.toString().padLeft(2, '0'),
+                time.seconds.padLeft(2, '0'),
                 style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.displayLarge?.fontSize,
+                  fontSize: MediaQuery.of(context).size.width * 0.2,
                   color: Theme.of(context).colorScheme.onBackground,
                 ),
               );
             },
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  if (_tickPlayer.playing) _tickPlayer.stop();
-                  _playerTimeCubit.reset();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                ),
-                child: Text(
-                  'Reset',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize:
-                        Theme.of(context).textTheme.headlineSmall?.fontSize,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 64),
-              ElevatedButton(
-                onPressed: () {
-                  if (_gameScoreCubit.state is GameUpdated ||
-                      _gameScoreCubit.state is GameStarted) {
-                    _playerTimeCubit.start();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      _playerTimecontroller.reset();
+                      _tickPlayer.seek(Duration.zero);
+                      if (_tickPlayer.playing) {
+                        _tickPlayer.stop();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      color: Theme.of(context).colorScheme.primary,
+                      alignment: Alignment.center,
+                      child: Text(
+                        'RESET',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.fontSize,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(
-                  'Start',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize:
-                        Theme.of(context).textTheme.headlineSmall?.fontSize,
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      if (_gameScoreCubit.state is GameUpdated ||
+                          _gameScoreCubit.state is GameStarted) {
+                        _playerTimecontroller.start();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      color: Theme.of(context).colorScheme.tertiary,
+                      alignment: Alignment.center,
+                      child: Text(
+                        'START',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.fontSize,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -376,51 +397,12 @@ class _HomeScreenState extends State<HomeScreen>
             fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
           ),
         ),
-        const SizedBox(height: 10),
-        BlocConsumer<GameTimeCubit, int>(
-          listener: (context, state) {
-            if (state == 0) {
-              _gameScoreCubit.timeOut();
-              _gameTimeCubit.reset();
-            }
-          },
-          builder: (context, state) {
-            final minutes = (state / 60).floor();
-            final seconds = state % 60;
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  minutes.toString().padLeft(2, '0'),
-                  style: TextStyle(
-                    fontSize:
-                        Theme.of(context).textTheme.displayLarge?.fontSize,
-                    color: Theme.of(context).colorScheme.onBackground,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  ':',
-                  style: TextStyle(
-                    fontSize:
-                        Theme.of(context).textTheme.displayMedium?.fontSize,
-                    color: Theme.of(context).colorScheme.onBackground,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  seconds.toString().padLeft(2, '0'),
-                  style: TextStyle(
-                    fontSize:
-                        Theme.of(context).textTheme.displayLarge?.fontSize,
-                    color: Theme.of(context).colorScheme.onBackground,
-                  ),
-                ),
-              ],
-            );
+        CustomTimer(
+          controller: _gameTimecontroller,
+          builder: (state, time) {
+            return _buildGameTimerWidget(time.minutes, time.seconds);
           },
         ),
-        const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -428,22 +410,36 @@ class _HomeScreenState extends State<HomeScreen>
               builder: (context, state) {
                 return ElevatedButton(
                   onPressed: () {
-                    if (state is GameEnded || state is GameWon) return;
+                    state.when(
+                      idle: () {
+                        _gameScoreCubit.start();
+                        _gameTimecontroller.start();
+                      },
+                      started: () {
+                        _gameTimecontroller.pause();
+                        _gameScoreCubit.pause();
+                      },
+                      updated: () {
+                        _gameTimecontroller.pause();
+                        _gameScoreCubit.pause();
+                      },
+                      paused: () {
+                        _gameTimecontroller.start();
+                        _gameScoreCubit.resume();
+                      },
+                      won: () => null,
+                      ended: () => null,
+                      error: (msg) {
+                        _gameScoreCubit.pause();
+                        _gameTimecontroller.pause();
 
-                    if (state is GameStarted || state is GameUpdated) {
-                      _gameScoreCubit.pause();
-                      _gameTimeCubit.pause();
-                    }
-
-                    if (state is GameIdle) {
-                      _gameScoreCubit.start();
-                      _gameTimeCubit.start();
-                    }
-
-                    if (state is GamePaused) {
-                      _gameScoreCubit.resume();
-                      _gameTimeCubit.resume();
-                    }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(msg),
+                          ),
+                        );
+                      },
+                    );
                   },
                   child: Text(
                     state is GameIdle
@@ -463,8 +459,9 @@ class _HomeScreenState extends State<HomeScreen>
             ElevatedButton(
               onPressed: () {
                 _gameScoreCubit.reset();
-                _gameTimeCubit.reset();
-                _playerTimeCubit.reset();
+                _gameTimecontroller.reset();
+                _playerTimecontroller.reset();
+                _tickPlayer.seek(Duration.zero);
               },
               child: Text(
                 'Reset',
@@ -474,6 +471,37 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGameTimerWidget(String minutes, String seconds) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          minutes.padLeft(2, '0'),
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.displayLarge?.fontSize,
+            color: Theme.of(context).colorScheme.onBackground,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          ':',
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.displayMedium?.fontSize,
+            color: Theme.of(context).colorScheme.onBackground,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          seconds.padLeft(2, '0'),
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.displayLarge?.fontSize,
+            color: Theme.of(context).colorScheme.onBackground,
+          ),
         ),
       ],
     );
@@ -495,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen>
             _gameScoreCubit.player2Score,
             _gameScoreCubit.winnerId ?? 1,
             widget.token,
-            time: _gameTimeCubit.state,
+            time: _gameTimecontroller.remaining.value.minutes,
           ),
           child: const ConfirmWidget(),
         );
@@ -503,8 +531,40 @@ class _HomeScreenState extends State<HomeScreen>
     ).then((value) {
       // ignore: use_if_null_to_convert_nulls_to_bools
       if (value == true) {
-        _navigateToLoginScreen(context);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (context) => const LoginScreen(),
+          ),
+        );
       }
     });
+  }
+
+  void _onPlayerTimeChanged() {
+    final remainingSeconds =
+        _playerTimecontroller.remaining.value.duration.inSeconds;
+    final soundBloc = context.read<SoundCubit>();
+    if (remainingSeconds == 0) {
+      _playerTimecontroller.reset();
+      _tickPlayer.seek(Duration.zero);
+      if (_tickPlayer.playing) {
+        _tickPlayer.stop();
+      }
+    } else if (remainingSeconds < 5) {
+      if (soundBloc.state) {
+        debugPrint('playing');
+        _tickPlayer.play();
+      } else {
+        _tickPlayer.stop();
+      }
+    }
+  }
+
+  void _onGameTimeChanged() {
+    final remainingSeconds =
+        _gameTimecontroller.remaining.value.duration.inSeconds;
+    if (remainingSeconds == 0) {
+      _gameScoreCubit.timeOut();
+    }
   }
 }

@@ -16,7 +16,7 @@ class ConfirmCubit extends Cubit<GameConfirm> {
     int score2,
     int winnerId,
     String token, {
-    required int time,
+    required String time,
   }) : super(
           GameConfirm(
             score1,
@@ -41,7 +41,7 @@ class ConfirmCubit extends Cubit<GameConfirm> {
 
   /// end game
   /// Ends the game.
-  Future<void> endGame(int time) async {
+  Future<void> endGame(String time) async {
     final result = await http.put(
       ApiUtils.getUrl(AppConstants.endMatchEndpoint),
       headers: {
@@ -51,7 +51,7 @@ class ConfirmCubit extends Cubit<GameConfirm> {
       body: jsonEncode({
         'winner_id': state.winnerId,
         'context_data': {
-          'game_time': '${time ~/ 60}:${time % 60}',
+          'game_time': time,
         }
       }),
     );
@@ -84,7 +84,7 @@ class GameConfirm {
   });
 
   /// time
-  final int time;
+  final String time;
 
   /// final score of player 1
   final int score1;
@@ -124,7 +124,7 @@ class GameConfirm {
     int? winnerId,
     String? token,
     bool? loading,
-    int? time,
+    String? time,
   }) {
     return GameConfirm(
       time: time ?? this.time,
