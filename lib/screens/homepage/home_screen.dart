@@ -262,9 +262,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           BlocBuilder<GameScoreCubit, GameScoreState>(
             builder: (context, state) {
               return Counter(
-                disabled: state is GameEnded ||
-                    state is GameIdle ||
-                    state is GamePaused,
+                disabled: state is GameEnded || state is GameIdle,
                 onValueChanged: (value) {
                   _gameScoreCubit.updateScore(
                     id,
