@@ -69,8 +69,6 @@ class GameScoreCubit extends Cubit<GameScoreState> {
 
     debugPrint('Result: ${result.body}');
     if (result.statusCode == 200) {
-      final data = jsonDecode(result.body) as Map<String, dynamic>;
-      debugPrint('Data: $data');
       player1Score = newScore1;
       player2Score = newScore2;
 
@@ -80,6 +78,13 @@ class GameScoreCubit extends Cubit<GameScoreState> {
             : _matchInfo.playerTwo.id;
         emit(GameWon());
       } else {
+        if (player1Score == player2Score) {
+          _winnerId = null;
+        } else {
+          _winnerId = player1Score > player2Score
+              ? _matchInfo.playerOne.id
+              : _matchInfo.playerTwo.id;
+        }
         emit(GameUpdated());
       }
     } else {
@@ -99,17 +104,18 @@ class GameScoreCubit extends Cubit<GameScoreState> {
 
   /// Resets the game.
   void reset() {
-    player1Score = 0;
-    player2Score = 0;
-    _winnerId = null;
     emit(GameIdle());
   }
 
   /// game time out
   void timeOut() {
-    _winnerId = player1Score > player2Score
-        ? _matchInfo.playerOne.id
-        : _matchInfo.playerTwo.id;
+    if (player1Score == player2Score) {
+      _winnerId = null;
+    } else {
+      _winnerId = player1Score > player2Score
+          ? _matchInfo.playerOne.id
+          : _matchInfo.playerTwo.id;
+    }
     emit(GameWon());
   }
 

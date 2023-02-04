@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   /// The controller for passcode field.
-  final _passcodeController = TextEditingController(text: '123456');
+  final _passcodeController = TextEditingController(text: '1234');
 
   /// login bloc
   final loginCubit = LoginCubit();

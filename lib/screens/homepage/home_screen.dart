@@ -10,7 +10,6 @@ import 'package:pocketslivescoringapp/cubits/theme_cubit.dart';
 import 'package:pocketslivescoringapp/models/match.dart';
 import 'package:pocketslivescoringapp/models/player.dart';
 import 'package:pocketslivescoringapp/screens/login/login_screen.dart';
-import 'package:pocketslivescoringapp/utils/toast_utils.dart';
 import 'package:pocketslivescoringapp/widgets/confirm_widget.dart';
 import 'package:pocketslivescoringapp/widgets/counter.dart';
 
@@ -147,19 +146,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: BlocBuilder<GameScoreCubit, GameScoreState>(
           builder: (context, state) {
             return ElevatedButton(
-              onPressed: () {
-                if (state is GameWon) {
-                  return _handleGameEnd();
-                }
-                ToastUtils.showWarningToast(context, 'Game not over yet!');
-              },
+              onPressed: _handleGameEnd,
               style: ElevatedButton.styleFrom(
-                backgroundColor: state is GameWon
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context)
-                        .colorScheme
-                        .onBackground
-                        .withOpacity(0.1),
+                backgroundColor: Theme.of(context).colorScheme.primary,
               ),
               child: const Text(
                 'End Match',

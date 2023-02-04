@@ -14,7 +14,7 @@ class ConfirmCubit extends Cubit<GameConfirm> {
     MatchInfo info,
     int score1,
     int score2,
-    int winnerId,
+    int? winnerId,
     String token, {
     required String time,
   }) : super(
@@ -93,7 +93,7 @@ class GameConfirm {
   final int score2;
 
   /// winner id
-  int winnerId;
+  int? winnerId;
 
   /// MatchInfo
   final MatchInfo matchInfo;
