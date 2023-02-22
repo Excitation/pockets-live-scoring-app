@@ -403,7 +403,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         CustomTimer(
           controller: _gameTimecontroller,
           builder: (state, time) {
-            return _buildGameTimerWidget(time.minutes, time.seconds);
+            return _buildGameTimerWidget(
+              minutes: time.minutes,
+              seconds: time.seconds,
+            );
           },
         ),
         Row(
@@ -479,7 +482,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildGameTimerWidget(String minutes, String seconds) {
+  Widget _buildGameTimerWidget({
+    required String minutes,
+    required String seconds,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -506,6 +512,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             color: Theme.of(context).colorScheme.onBackground,
           ),
         ),
+        if (_gameScoreCubit.state is GameIdle)
+          _buildTimeAdjustmentWidget(context),
       ],
     );
   }
@@ -613,6 +621,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildTimeAdjustmentWidget(BuildContext context) {
+    /// an arrow up and down icon
+    /// to decrease and increase the time
+    /// the time is in minutes and can be max 60 minutes
+    /// min 10 minutes
+    /// interval is 5 minutes
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          color: Theme.of(context).colorScheme.onBackground,
+          iconSize: 30,
+          icon: const Icon(Icons.add),
+          onPressed: () {
+            debugPrint('increase');
+            debugPrint(_gameTimecontroller.begin.inMinutes.toString());
+            if (_gameTimecontroller.begin.inMinutes == 60) {
+              debugPrint('max');
+              return;
+            }
+
+            final time = _gameTimecontroller.begin.inMinutes + 5;
+            _gameTimecontroller
+              ..begin = Duration(minutes: time)
+              ..jumpTo(Duration(minutes: time));
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.remove),
+          color: Theme.of(context).colorScheme.onBackground,
+          iconSize: 30,
+          onPressed: () {
+            if (_gameTimecontroller.begin.inMinutes == 15) {
+              return;
+            }
+
+            final time = _gameTimecontroller.begin.inMinutes - 5;
+            _gameTimecontroller
+              ..begin = Duration(minutes: time)
+              ..jumpTo(Duration(minutes: time));
+          },
+        ),
+      ],
     );
   }
 }
