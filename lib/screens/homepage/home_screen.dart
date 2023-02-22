@@ -318,18 +318,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      _playerTimecontroller.reset();
-                      _tickPlayer.seek(Duration.zero);
-                      if (_tickPlayer.playing) {
-                        _tickPlayer.stop();
+                      if (_gameScoreCubit.state is GameIdle ||
+                          _gameScoreCubit.state is GameEnded) {
+                        return;
                       }
+
+                      if (_playerTimecontroller.state.value ==
+                              CustomTimerState.paused ||
+                          _playerTimecontroller.state.value ==
+                              CustomTimerState.reset) {
+                        _playerTimecontroller.start();
+                        _gameTimecontroller.start();
+                        return;
+                      }
+
+                      _confirmReset(context);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(32),
                       color: Theme.of(context).colorScheme.primary,
                       alignment: Alignment.center,
                       child: Text(
-                        'RESET',
+                        'RESET/START',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: Theme.of(context)
@@ -346,7 +356,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     onTap: () {
                       if (_gameScoreCubit.state is GameUpdated ||
                           _gameScoreCubit.state is GameStarted) {
-                        _playerTimecontroller.start();
+                        if (_playerTimecontroller.state.value ==
+                                CustomTimerState.counting &&
+                            _gameTimecontroller.remaining.value.duration >
+                                Duration.zero) {
+                          _playerTimecontroller.pause();
+                          _gameTimecontroller.pause();
+                        }
                       }
                     },
                     child: Container(
@@ -354,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       color: Theme.of(context).colorScheme.tertiary,
                       alignment: Alignment.center,
                       child: Text(
-                        'START',
+                        'PAUSE',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: Theme.of(context)
@@ -553,5 +569,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (remainingSeconds == 0) {
       _gameScoreCubit.timeOut();
     }
+  }
+
+  void _confirmReset(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Reset Timer',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: Text(
+            'Are you sure you want to reset the Timer?',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'CANCEL',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                _tickPlayer.seek(Duration.zero);
+                _playerTimecontroller.reset();
+                if (_tickPlayer.playing) {
+                  _tickPlayer.stop();
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'RESET',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

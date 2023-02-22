@@ -2,8 +2,8 @@
 /// Like API endpoints, colors, Key Strings, etc.
 class AppConstants {
   /// The base URL of the API.
-  // static const String baseUrl = 'http://localhost:3000';
-  static const String baseUrl = 'https://lionfish-app-y27fn.ondigitalocean.app';
+  static const String baseUrl = 'http://localhost:3000';
+  // static const String baseUrl = 'https://lionfish-app-y27fn.ondigitalocean.app';
 
   /// Login endpoint.
   static const String loginEndpoint = '/auth/match/';
