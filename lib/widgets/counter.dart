@@ -9,6 +9,7 @@ class Counter extends StatefulWidget {
     required this.onValueChanged,
     this.maxCount = 7,
     this.disabled = false,
+    this.initialValue = 0,
   });
 
   /// on value change callback
@@ -21,19 +22,23 @@ class Counter extends StatefulWidget {
   /// if the counter is disabled
   final bool disabled;
 
+  /// initial value for the counter
+  final int initialValue;
+
   @override
   State<Counter> createState() => _CounterState();
 }
 
 /// State class for counter
 class _CounterState extends State<Counter> {
-  int _count = 0;
+  late int _count = 0;
   bool _isDisabled = false;
 
   @override
   void initState() {
     super.initState();
     _isDisabled = widget.disabled;
+    _count = widget.initialValue;
   }
 
   @override
@@ -41,6 +46,10 @@ class _CounterState extends State<Counter> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.disabled != widget.disabled) {
       _isDisabled = widget.disabled;
+    }
+
+    if (oldWidget.initialValue != widget.initialValue) {
+      _count = widget.initialValue;
     }
   }
 

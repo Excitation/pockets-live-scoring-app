@@ -123,6 +123,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             top: 0,
             child: _buildIcons(),
           ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: BlocBuilder<GameScoreCubit, GameScoreState>(
+              builder: (context, state) {
+                if (state is GamePaused) {
+                  return Text(
+                    'PAUSED',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(color: Colors.amber),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          )
         ],
       ),
     );
@@ -263,6 +280,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             builder: (context, state) {
               return Counter(
                 disabled: state is GameEnded || state is GameIdle,
+                initialValue: id == 1
+                    ? _gameScoreCubit.player1Score
+                    : _gameScoreCubit.player2Score,
                 onValueChanged: (value) {
                   _gameScoreCubit.updateScore(
                     id,
@@ -287,111 +307,151 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTimer() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 12),
-      color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
-      child: Column(
-        children: [
-          Text(
-            'ACT QUICK',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onBackground,
-              fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
-            ),
-          ),
-          CustomTimer(
-            controller: _playerTimecontroller,
-            builder: (state, time) {
-              return Text(
-                time.seconds.padLeft(2, '0'),
-                style: TextStyle(
-                  fontSize: MediaQuery.of(context).size.width * 0.2,
-                  color: Theme.of(context).colorScheme.onBackground,
-                ),
-              );
-            },
-          ),
-          Expanded(
-            child: Row(
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 12),
+            color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
+            child: Column(
               children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      if (_gameScoreCubit.state is GameIdle ||
-                          _gameScoreCubit.state is GameEnded) {
-                        return;
-                      }
-
-                      if (_playerTimecontroller.state.value ==
-                              CustomTimerState.paused ||
-                          _playerTimecontroller.state.value ==
-                              CustomTimerState.reset) {
-                        _playerTimecontroller.start();
-                        _gameTimecontroller.start();
-                        return;
-                      }
-
-                      _confirmReset(context);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(32),
-                      color: Theme.of(context).colorScheme.primary,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'RESET/START',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          fontSize: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.fontSize,
-                        ),
-                      ),
-                    ),
+                Text(
+                  'ACT QUICK',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onBackground,
+                    fontSize:
+                        Theme.of(context).textTheme.headlineSmall?.fontSize,
                   ),
                 ),
+                CustomTimer(
+                  controller: _playerTimecontroller,
+                  builder: (state, time) {
+                    return Text(
+                      time.seconds.padLeft(2, '0'),
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.2,
+                        color: Theme.of(context).colorScheme.onBackground,
+                      ),
+                    );
+                  },
+                ),
                 Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      if (_gameScoreCubit.state is GameUpdated ||
-                          _gameScoreCubit.state is GameStarted) {
-                        if (_playerTimecontroller.state.value ==
-                                CustomTimerState.counting &&
-                            _gameTimecontroller.remaining.value.duration >
-                                Duration.zero) {
-                          _playerTimecontroller.pause();
-                          _gameTimecontroller.pause();
-                        }
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(32),
-                      color: Theme.of(context).colorScheme.tertiary,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'PAUSE',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          fontSize: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.fontSize,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            if (_gameScoreCubit.state is GameIdle ||
+                                _gameScoreCubit.state is GameEnded) {
+                              return;
+                            }
+
+                            if (_playerTimecontroller.state.value ==
+                                    CustomTimerState.paused ||
+                                _playerTimecontroller.state.value ==
+                                    CustomTimerState.reset) {
+                              _playerTimecontroller.start();
+                              _gameTimecontroller.start();
+                              _gameScoreCubit.resume();
+                              return;
+                            }
+
+                            _playerTimecontroller
+                              ..reset()
+                              ..start();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(32),
+                            color: Theme.of(context).colorScheme.primary,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'RESET/START',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.fontSize,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            debugPrint(
+                              'pause: gameScoreCubit.state: ${_gameScoreCubit.state}',
+                            );
+                            if (_gameScoreCubit.state is GameUpdated ||
+                                _gameScoreCubit.state is GameStarted) {
+                              if (_playerTimecontroller.state.value ==
+                                      CustomTimerState.counting &&
+                                  _gameTimecontroller.remaining.value.duration >
+                                      Duration.zero) {
+                                _playerTimecontroller.pause();
+                                _gameTimecontroller.pause();
+                                _gameScoreCubit.pause();
+
+                                if (_tickPlayer.playing) {
+                                  _tickPlayer.pause();
+                                }
+                              }
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(32),
+                            color: Theme.of(context).colorScheme.tertiary,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'PAUSE',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.fontSize,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: BlocBuilder<GameScoreCubit, GameScoreState>(
+            builder: (context, state) {
+              debugPrint('state: $state');
+              if (state is GamePaused) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 32),
+                  child: Text(
+                    'PAUSED',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(color: Colors.amber),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        )
+      ],
     );
   }
 
   Widget _buildGameTimer(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           'Time Remaining',
@@ -404,8 +464,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           controller: _gameTimecontroller,
           builder: (state, time) {
             return _buildGameTimerWidget(
-              minutes: time.minutes,
-              seconds: time.seconds,
+              minutes: (time.duration.inSeconds ~/ 60).toString(),
+              seconds: (time.duration.inSeconds % 60).toString(),
             );
           },
         ),
@@ -464,10 +524,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             const SizedBox(width: 64),
             ElevatedButton(
               onPressed: () {
-                _gameScoreCubit.reset();
-                _gameTimecontroller.reset();
-                _playerTimecontroller.reset();
-                _tickPlayer.seek(Duration.zero);
+                _confirmReset(context);
               },
               child: Text(
                 'Reset',
@@ -585,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            'Reset Timer',
+            'Reset Game Timer',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           content: Text(
@@ -604,8 +661,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             TextButton(
               onPressed: () {
-                _tickPlayer.seek(Duration.zero);
+                _gameScoreCubit.reset();
+                _gameTimecontroller.reset();
                 _playerTimecontroller.reset();
+                _tickPlayer.seek(Duration.zero);
                 if (_tickPlayer.playing) {
                   _tickPlayer.stop();
                 }
@@ -627,9 +686,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildTimeAdjustmentWidget(BuildContext context) {
     /// an arrow up and down icon
     /// to decrease and increase the time
-    /// the time is in minutes and can be max 60 minutes
-    /// min 10 minutes
-    /// interval is 5 minutes
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -640,12 +696,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onPressed: () {
             debugPrint('increase');
             debugPrint(_gameTimecontroller.begin.inMinutes.toString());
-            if (_gameTimecontroller.begin.inMinutes == 60) {
-              debugPrint('max');
-              return;
-            }
 
-            final time = _gameTimecontroller.begin.inMinutes + 5;
+            final time = _gameTimecontroller.begin.inMinutes + 1;
             _gameTimecontroller
               ..begin = Duration(minutes: time)
               ..jumpTo(Duration(minutes: time));
@@ -656,11 +708,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           color: Theme.of(context).colorScheme.onBackground,
           iconSize: 30,
           onPressed: () {
-            if (_gameTimecontroller.begin.inMinutes == 15) {
+            if (_gameTimecontroller.begin.inMinutes < 2) {
               return;
             }
-
-            final time = _gameTimecontroller.begin.inMinutes - 5;
+            final time = _gameTimecontroller.begin.inMinutes - 1;
             _gameTimecontroller
               ..begin = Duration(minutes: time)
               ..jumpTo(Duration(minutes: time));

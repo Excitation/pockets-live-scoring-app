@@ -104,6 +104,9 @@ class GameScoreCubit extends Cubit<GameScoreState> {
 
   /// Resets the game.
   void reset() {
+    player1Score = 0;
+    player2Score = 0;
+    _winnerId = null;
     emit(GameIdle());
   }
 
