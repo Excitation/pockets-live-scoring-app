@@ -324,101 +324,100 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Theme.of(context).textTheme.headlineSmall?.fontSize,
                   ),
                 ),
-                CustomTimer(
-                  controller: _playerTimecontroller,
-                  builder: (state, time) {
-                    return Text(
-                      time.seconds.padLeft(2, '0'),
-                      style: TextStyle(
-                        fontSize: MediaQuery.of(context).size.width * 0.2,
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                    );
-                  },
-                ),
                 Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            if (_gameScoreCubit.state is GameIdle ||
-                                _gameScoreCubit.state is GameEnded) {
-                              return;
-                            }
+                  child: CustomTimer(
+                    controller: _playerTimecontroller,
+                    builder: (state, time) {
+                      return Text(
+                        time.seconds.padLeft(2, '0'),
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.28,
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          if (_gameScoreCubit.state is GameIdle ||
+                              _gameScoreCubit.state is GameEnded) {
+                            return;
+                          }
 
-                            if (_playerTimecontroller.state.value ==
-                                    CustomTimerState.paused ||
-                                _playerTimecontroller.state.value ==
-                                    CustomTimerState.reset) {
-                              _playerTimecontroller.start();
-                              _gameTimecontroller.start();
-                              _gameScoreCubit.resume();
-                              return;
-                            }
+                          if (_playerTimecontroller.state.value ==
+                                  CustomTimerState.paused ||
+                              _playerTimecontroller.state.value ==
+                                  CustomTimerState.reset) {
+                            _playerTimecontroller.start();
+                            _gameTimecontroller.start();
+                            _gameScoreCubit.resume();
+                            return;
+                          }
 
-                            _playerTimecontroller
-                              ..reset()
-                              ..start();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(32),
-                            color: Theme.of(context).colorScheme.primary,
-                            alignment: Alignment.center,
-                            child: Text(
-                              'RESET/START',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontSize: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.fontSize,
-                              ),
+                          _playerTimecontroller
+                            ..begin =
+                                const Duration(seconds: 30, milliseconds: 700)
+                            ..reset()
+                            ..start();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          color: Theme.of(context).colorScheme.primary,
+                          alignment: Alignment.center,
+                          child: Text(
+                            'RESET/START',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontSize: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.fontSize,
                             ),
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            debugPrint(
-                              'pause: gameScoreCubit.state: ${_gameScoreCubit.state}',
-                            );
-                            if (_gameScoreCubit.state is GameUpdated ||
-                                _gameScoreCubit.state is GameStarted) {
-                              if (_playerTimecontroller.state.value ==
-                                      CustomTimerState.counting &&
-                                  _gameTimecontroller.remaining.value.duration >
-                                      Duration.zero) {
-                                _playerTimecontroller.pause();
-                                _gameTimecontroller.pause();
-                                _gameScoreCubit.pause();
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          if (_gameScoreCubit.state is GameUpdated ||
+                              _gameScoreCubit.state is GameStarted) {
+                            if (_playerTimecontroller.state.value ==
+                                    CustomTimerState.counting &&
+                                _gameTimecontroller.remaining.value.duration >
+                                    Duration.zero) {
+                              _playerTimecontroller.pause();
+                              _gameTimecontroller.pause();
+                              _gameScoreCubit.pause();
 
-                                if (_tickPlayer.playing) {
-                                  _tickPlayer.pause();
-                                }
+                              if (_tickPlayer.playing) {
+                                _tickPlayer.pause();
                               }
                             }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(32),
-                            color: Theme.of(context).colorScheme.tertiary,
-                            alignment: Alignment.center,
-                            child: Text(
-                              'PAUSE',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontSize: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.fontSize,
-                              ),
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          color: Theme.of(context).colorScheme.tertiary,
+                          alignment: Alignment.center,
+                          child: Text(
+                            'PAUSE',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontSize: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.fontSize,
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -618,7 +617,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (_tickPlayer.playing) {
         _tickPlayer.stop();
       }
-    } else if (remainingSeconds < 5) {
+    } else if (remainingSeconds <= 5) {
       if (soundBloc.state) {
         debugPrint('playing');
         _tickPlayer.play();
