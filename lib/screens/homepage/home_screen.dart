@@ -35,7 +35,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final _tickPlayer = AudioPlayer()..setAsset('assets/sounds/beep.mp3');
+  final _tickPlayer = AudioPlayer()..setAsset('assets/sounds/beep.m4a');
 
   /// game score bloc
   late GameScoreCubit _gameScoreCubit;
